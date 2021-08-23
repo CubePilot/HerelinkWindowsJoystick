@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31025.218
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rc-servicesender", "rc-servicesender\rc-servicesender.csproj", "{B4B779AF-E3D3-4423-97E6-C29F235E5D52}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B4B779AF-E3D3-4423-97E6-C29F235E5D52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4B779AF-E3D3-4423-97E6-C29F235E5D52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4B779AF-E3D3-4423-97E6-C29F235E5D52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4B779AF-E3D3-4423-97E6-C29F235E5D52}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5DC04612-0255-439E-9CE7-92458C1141AA}
+	EndGlobalSection
+EndGlobal
