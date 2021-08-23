@@ -76,7 +76,7 @@ namespace rc_servicesender
             var joy = clientjoy.CreateXbox360Controller();
             joy.Connect();
 
-            var service = new ServiceProfile("HereLink Desktop1", "_mavlink._udp", 14550,
+            var service = new ServiceProfile(Environment.MachineName, "_mavlink._udp", 14550,
                 new IPAddress[] {IPAddress.Parse("10.1.1.91") });
             var sd = new ServiceDiscovery();
             sd.Advertise(service);
