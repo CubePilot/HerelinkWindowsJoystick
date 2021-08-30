@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Makaretu.Dns;
 using Nefarius.ViGEm.Client;
@@ -76,17 +77,78 @@ namespace rc_servicesender
             var joy = clientjoy.CreateXbox360Controller();
             joy.Connect();
 
-            var service = new ServiceProfile(Environment.MachineName, "_mavlink._udp", 14550,
-                new IPAddress[] {IPAddress.Parse("10.1.1.91") });
-            var sd = new ServiceDiscovery();
-            sd.Advertise(service);
-            sd.ServiceDiscovered += (sender, name) => { Console.WriteLine(name); sd.QueryServiceInstances(name); };
+            foreach (var a in MulticastService.GetIPAddresses())
+            {
+                Console.WriteLine($"IP address {a}");
+            }
+
+            var addresses = MulticastService.GetIPAddresses()
+                .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+
+            var mdns = new MulticastService();
+
+            mdns.QueryReceived += (s, e) =>
+            {
+                var names = e.Message.Questions
+                    .Select(q => q.Name + " " + q.Type);
+                Console.WriteLine($"got a query for {String.Join(", ", names)} {e.RemoteEndPoint}");
+            };
+            mdns.AnswerReceived += (s, e) =>
+            {
+                var names = e.Message.Answers
+                    .Select(q => q.Name + " " + q.Type)
+                    .Distinct();
+                Console.WriteLine($"got answer for {String.Join(", ", names)} {e.RemoteEndPoint}");
+            };
+            mdns.NetworkInterfaceDiscovered += (s, e) =>
+            {
+                foreach (var nic in e.NetworkInterfaces)
+                {
+                    Console.WriteLine($"discovered NIC '{nic.Name}'");
+                }
+
+            };
+            mdns.UseIpv4 = true;
+            mdns.UseIpv6 = false;
+
+            var service = new ServiceProfile(Environment.MachineName, "_mavlink._udp", 14550, addresses);
+            var sd = new ServiceDiscovery(mdns);
+            sd.ServiceDiscovered += (sender, name) =>
+            {
+                Console.WriteLine("ServiceDiscovered " + name);
+                sd.QueryServiceInstances(name);
+            };
             sd.ServiceInstanceDiscovered += (sender, eventArgs) =>
             {
-                Console.WriteLine(eventArgs.RemoteEndPoint + " " + eventArgs.ServiceInstanceName);
+                Console.WriteLine("ServiceInstanceDiscovered " + eventArgs.RemoteEndPoint + " " +
+                                  eventArgs.ServiceInstanceName);
             };
-            sd.Announce(service);
-          //  sd.QueryAllServices();
+
+            mdns.Start();
+            sd.Advertise(service);
+
+            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (var adapter in nics)
+            {
+                IPInterfaceProperties ip_properties = adapter.GetIPProperties();
+                if (!adapter.GetIPProperties().MulticastAddresses.Any())
+                    continue; // most of VPN adapters will be skipped
+                if (!adapter.SupportsMulticast)
+                    continue; // multicast is meaningless for this type of connection
+                if (OperationalStatus.Up != adapter.OperationalStatus)
+                    continue; // this adapter is off or not connected
+                var p = ip_properties.GetIPv4Properties();
+                if (null == p)
+                    continue; // IPv4 is not configured on this adapter
+                var service2 = new ServiceProfile(Environment.MachineName, "_mavlink._udp", 14550,
+                    new IPAddress[]
+                    {
+                        ip_properties.UnicastAddresses.First(a => a.Address.AddressFamily == AddressFamily.InterNetwork).Address
+                    });
+                //sd.Advertise(service2);
+                sd.Announce(service2);
+            }
 
             var client = new UdpClient(16666);
 
