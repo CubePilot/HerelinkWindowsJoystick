@@ -87,7 +87,7 @@ namespace rc_servicesender
             var addresses = MulticastService.GetIPAddresses()
                 .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork);
 
-            var mdns = new MulticastService();
+            var mdns = new MulticastService((nics) => { return nics.Where(nic => nic.SupportsMulticast && nic.OperationalStatus == OperationalStatus.Up && nic.GetIPProperties().GatewayAddresses.Count > 0); });
 
             mdns.QueryReceived += (s, e) =>
             {
@@ -106,7 +106,7 @@ namespace rc_servicesender
             {
                 foreach (var nic in e.NetworkInterfaces)
                 {
-                    Console.WriteLine($"mdns discovered NIC '{nic.Name}'");
+                    Console.WriteLine($"mdns discovered NIC '{nic.Name}' {nic.Description}");
                 }
 
             };
@@ -117,10 +117,19 @@ namespace rc_servicesender
             mdns.Start();
 
 
-            var service = new ServiceProfile("HereLink-" + Environment.MachineName, "_mavlink._udp", 14550, addresses);
+            var service = new ServiceProfile("HereLink-" + Environment.MachineName, "_mavlink._udp", 14550);//, addresses);
             var sd = new ServiceDiscovery(mdns);
             sd.Advertise(service);
 
+            sd.ServiceDiscovered += (s, dn) => { Console.WriteLine($"sd discovered '{dn.ToCanonical()}'"); };
+
+            Task.Run(() => {
+                while (true)
+                {
+                    sd.Announce(service);
+                    Thread.Sleep(30000);
+                }
+            });
 
             var client = new UdpClient(16666);
 
@@ -144,7 +153,7 @@ namespace rc_servicesender
                     {
                         //1024
                         //364 - 1684
-                        joy.SetAxisValue(0, (short)mapConstrained(list[0],364,1684, short.MinValue, short.MaxValue));
+                        joy.SetAxisValue(0, (short)mapConstrained(list[0], 364, 1684, short.MinValue, short.MaxValue));
                         joy.SetAxisValue(1, (short)mapConstrained(list[1], 364, 1684, short.MinValue, short.MaxValue));
                         joy.SetAxisValue(2, (short)mapConstrained(list[2], 364, 1684, short.MinValue, short.MaxValue));
                         joy.SetAxisValue(3, (short)mapConstrained(list[3], 364, 1684, short.MinValue, short.MaxValue));
