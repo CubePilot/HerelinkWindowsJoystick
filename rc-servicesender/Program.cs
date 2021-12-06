@@ -84,10 +84,15 @@ namespace rc_servicesender
                 Console.WriteLine($"IP address {a}");
             }
 
-            var addresses = MulticastService.GetIPAddresses()
+            /*var addresses = MulticastService.GetIPAddresses()
                 .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+            */
+            
+            var nicans = MulticastService.GetNetworkInterfaces().Where(nic => nic.SupportsMulticast && nic.OperationalStatus == OperationalStatus.Up && nic.GetIPProperties().GatewayAddresses.Count > 0);
 
-            var mdns = new MulticastService((nics) => { return nics.Where(nic => nic.SupportsMulticast && nic.OperationalStatus == OperationalStatus.Up && nic.GetIPProperties().GatewayAddresses.Count > 0); });
+            var addresses = nicans.Select(a => a.GetIPProperties().UnicastAddresses.First().Address).ToList();
+
+           var mdns = new MulticastService((nics) => { return nicans; });
 
             mdns.QueryReceived += (s, e) =>
             {
@@ -117,7 +122,7 @@ namespace rc_servicesender
             mdns.Start();
 
 
-            var service = new ServiceProfile("HereLink-" + Environment.MachineName, "_mavlink._udp", 14550);//, addresses);
+            var service = new ServiceProfile("HereLink-" + Environment.MachineName, "_mavlink._udp", 14550, addresses);
             var sd = new ServiceDiscovery(mdns);
             sd.Advertise(service);
 
