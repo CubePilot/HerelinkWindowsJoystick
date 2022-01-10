@@ -18,7 +18,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore --runtime win-x64
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
