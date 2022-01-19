@@ -90,7 +90,7 @@ namespace rc_servicesender
             
             var nicans = MulticastService.GetNetworkInterfaces().Where(nic => nic.SupportsMulticast && nic.OperationalStatus == OperationalStatus.Up && nic.GetIPProperties().GatewayAddresses.Count > 0);
 
-            var addresses = nicans.Select(a => a.GetIPProperties().UnicastAddresses.First().Address).ToList();
+            var addresses = nicans.Select(a => a.GetIPProperties().UnicastAddresses.Where(a => a.Address.AddressFamily == AddressFamily.InterNetwork).First().Address).ToList();
 
            var mdns = new MulticastService((nics) => { return nicans; });
 
